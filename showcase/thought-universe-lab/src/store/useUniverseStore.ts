@@ -1,0 +1,5 @@
+import{create}from'zustand';import type{PhysicsParams,UniverseSnapshot}from'../universe/models/types';
+type S={snapshot:UniverseSnapshot|null;selected:string|null;labOpen:boolean;setSnapshot:(s:UniverseSnapshot)=>void;select:(id:string|null)=>void;toggleLab:()=>void};
+export const useUniverseStore=create<S>(set=>({snapshot:null,selected:null,labOpen:true,setSnapshot:s=>set({snapshot:s}),select:id=>set({selected:id}),toggleLab:()=>set(s=>({labOpen:!s.labOpen}))}));
+export const worker=new Worker(new URL('../universe/worker/simulation.worker.ts',import.meta.url),{type:'module'});worker.onmessage=({data})=>data.type==='snapshot'&&useUniverseStore.getState().setSnapshot(data.payload);worker.postMessage({type:'init',seed:101});
+export const command={add:(text:string)=>worker.postMessage({type:'add',text}),pause:(value:boolean)=>worker.postMessage({type:'pause',value}),params:(value:Partial<PhysicsParams>)=>worker.postMessage({type:'params',value}),reset:(seed?:number)=>worker.postMessage({type:'reset',seed}),load:(value:UniverseSnapshot)=>worker.postMessage({type:'load',value})};
