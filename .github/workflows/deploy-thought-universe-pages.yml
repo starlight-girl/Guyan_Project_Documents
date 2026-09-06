@@ -1,0 +1,61 @@
+name: Deploy Thought Universe Lab Preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-thought-universe-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: thought-universe-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch exact GitCode source
+        run: |
+          git clone https://gitcode.com/2503_91022799/Guyan_Project_Documents.git source
+          cd source
+          git checkout 2805e4b2f240284e753cf90d5f215b1023505c3a
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/showcase/thought-universe-lab/package-lock.json
+
+      - name: Install dependencies
+        working-directory: source/showcase/thought-universe-lab
+        run: npm ci
+
+      - name: Build for GitHub Pages
+        working-directory: source/showcase/thought-universe-lab
+        run: npm run build -- --base=/Guyan_Project_Documents/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: source/showcase/thought-universe-lab/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
